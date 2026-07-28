@@ -1,68 +1,72 @@
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
+import time
 
-
-def parse_quotes():
-    # URL учебного сайта для парсинга
-    url = "https://dzen.ru/"
-
-    # Имитируем реальный браузер (User-Agent), чтобы сайт не заблокировал запрос
+def parse_all_quotes():
+    # Стартовый URL сайта
+    base_url = "https://toscrape.com"
+    current_page = "/"
+    
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
-
-    print(head := "=== Запуск парсера цитат ===")
-
-    try:
-        # Отправляем запрос к сайту
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()  # Вызовет ошибку, если сайт недоступен
-    except requests.exceptions.RequestException as e:
-        print(f"Ошибка при запросе к сайту: {e}")
-        return
-
-    # Передаем HTML-код страницы в BeautifulSoup для анализа
-    soup = BeautifulSoup(response.text, "html.parser")
-
-    # Находим все блоки с цитатами на странице
-    quote_blocks = soup.find_all("div", class_="quote")
-
-    # Список, где будем хранить структурированные данные
+    
     parsed_data = []
+    page_number = 1
+    
+    print("=== Запуск многостраничного парсера ===")
+    
+    # Цикл работает до тех пор, пока есть ссылка на следующую страницу
+    while current_page:
+        full_url = f"{base_url}{current_page}"
+        print(f"Парсим страницу {page_number}: {full_url}")
+        
+        try:
+            response = requests.get(full_url, headers=headers)
+            response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            print(f"Ошибка при запросе к странице {page_number}: {e}")
+            break
 
-    # Обходим каждый блок и извлекаем текст, автора и теги
-    for block in quote_blocks:
-        # Извлекаем текст цитаты и убираем лишние кавычки
-        text = block.find("span", class_="text").text.strip("“”")
-
-        # Извлекаем имя автора
-        author = block.find("small", class_="author").text.strip()
-
-        # Собираем все теги цитаты в одну строку через запятую
-        tags_meta = block.find_all("a", class_="tag")
-        tags = ", ".join([tag.text for tag in tags_meta])
-
-        # Формируем словарь с данными одной цитаты
-        quote_info = {
-            "Цитата": text,
-            "Автор": author,
-            "Теги": tags
-        }
-
-        # Добавляем в общий список
-        parsed_data.append(quote_info)
-
-    # Создаем DataFrame из полученных данных
-    df = pd.DataFrame(parsed_data)
-
-    # Сохраняем результат в Excel-файл
-    output_file = "quotes_portfolio.xlsx"
-    df.to_excel(output_file, index=False)
-
-    print(f"Успешно собрано {len(parsed_data)} цитат.")
-    print(f"Данные сохранены в файл: {output_file}")
-
+        soup = BeautifulSoup(response.text, "html.parser")
+        quote_blocks = soup.find_all("div", class_="quote")
+        
+        for block in quote_blocks:
+            text = block.find("span", class_="text").text.strip("“”")
+            author = block.find("small", class_="author").text.strip()
+            tags_meta = block.find_all("a", class_="tag")
+            tags = ", ".join([tag.text for tag in tags_meta])
+            
+            parsed_data.append({
+                "Цитата": text,
+                "Автор": author,
+                "Теги": tags
+            })
+        
+        # НАХОДИМ КНОПКУ «NEXT» (След. страница)
+        # На сайте она выглядит как <li class="next"><a href="/page/2/">Next →</a></li>
+        next_button = soup.find("li", class_="next")
+        
+        if next_button:
+            # Если кнопка есть, берем из нее относительную ссылку (например, '/page/2/')
+            current_page = next_button.find("a")["href"]
+            page_number += 1
+            time.sleep(1)  # Делаем паузу в 1 секунду, чтобы не перегружать сайт (хороший тон в парсинге)
+        else:
+            # Если кнопки «Next» нет — мы дошли до конца сайта
+            current_page = None 
+            print("Все страницы успешно обработаны!")
+    
+    # Сохраняем все собранные данные в Excel
+    if parsed_data:
+        df = pd.DataFrame(parsed_data)
+        output_file = "all_quotes_portfolio.xlsx"
+        df.to_excel(output_file, index=False)
+        print(f"\nСбор завершен! Всего собрано {len(parsed_data)} цитат.")
+        print(f"Результат сохранен в: {output_file}")
+    else:
+        print("Данные не были собраны.")
 
 if __name__ == "__main__":
-    parse_quotes()
+    parse_all_quotes()
