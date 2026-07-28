@@ -6,7 +6,7 @@ from aiogram.filters import CommandStart
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
 
 # Вставьте сюда токен, который выдал @BotFather
-BOT_TOKEN = "8986306032:AAFES6EzJIUAZm9ZLbqmcbv4clzfkDEAB0c"
+BOT_TOKEN = "ВВЕДИТЕ ВАШ ТОКЕН"
 
 # Инициализируем бота и диспетчер
 bot = Bot(token=BOT_TOKEN)
