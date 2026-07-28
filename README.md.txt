@@ -16,12 +16,17 @@
    ```
 2. Установите зависимости:
    ```bash
-   pip install requests beautifulsoup4 pandas openpyxl
+   pip install requests beautifulsoup4 pandas openpyxl aiogram
    ```
-3. Запустите скрипт:
+3. **Сбор данных**: Запустите парсер для создания базы данных в Excel:
    ```bash
    python scraper.py
    ```
+4. **Запуск бота**: Вставьте свой токен от @BotFather в файл `bot.py` и запустите бота:
+   ```bash
+   python bot.py
+   ```
+
 
 ## 📊 Результат работы
 После запуска скрипт создает файл `quotes_portfolio.xlsx` в корневой папке проекта со следующей структурой:
